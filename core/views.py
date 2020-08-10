@@ -53,7 +53,8 @@ def register(request):
     body = {"method": "get",  # Используемый метод.
             "params": {"SelectionCriteria": {},
                        # Критерий отбора кампаний. Для получения всех кампаний должен быть пустым
-                       "FieldNames": ["ClientInfo", "Id", "Status", "Funds",  "State", "Currency", "Name", "StatusPayment", "StatusClarification", "StartDate", "EndDate", "DailyBudget"]
+                       "FieldNames": ["ClientInfo", "Id", "Status", "Funds", "State", "Currency", "Name",
+                                      "StatusPayment", "StatusClarification", "StartDate", "EndDate", "DailyBudget"]
                        # Имена параметров, которые требуется получить.
                        }}
     jsonBody = json.dumps(body, ensure_ascii=False).encode('utf8')
@@ -80,7 +81,7 @@ def register(request):
                 # В этом случае следует выполнить дополнительные запросы для получения всех объектов.
                 # Подробное описание постраничной выборки - https://tech.yandex.ru/direct/doc/dg/best-practice/get-docpage/#page
                 return Response({"success": True, 'message': "Получены не все доступные объекты."},
-                            status=HTTP_200_OK)
+                                status=HTTP_200_OK)
 
     # Обработка ошибки, если не удалось соединиться с сервером API Директа
     except ConnectionError:
@@ -95,6 +96,7 @@ def register(request):
         print("Произошла непредвиденная ошибка.")
         return Response({"success": True, 'message': "Произошла непредвиденная ошибка."},
                         status=HTTP_200_OK)
+
 
 @csrf_exempt
 @api_view(["POST"])
@@ -258,3 +260,76 @@ def statistic(request):
             print("Произошла непредвиденная ошибка")
             # Принудительный выход из цикла
             break
+
+    ############################################################
+    #################### YANDEX METRIKA ########################
+    ############################################################
+
+
+# http://127.0.0.1:8000/api/yandex_metric_counter/?token=AgAAAAA6GOKOAAaK6ylSovuTNkVSnE6XeGbOKks
+@csrf_exempt
+@api_view(["GET"])
+def yandex_metric_counter(request):
+    token = request.query_params.get('token')
+    if token is None:
+        return Response({"success": True, 'message': "add token"},
+                        status=HTTP_200_OK)
+    try:
+        header = {'Authorization': 'OAuth ' + token}
+        response = requests.get('https://api-metrika.yandex.net/management/v1/counters',
+                                headers=header)
+        try:
+            text = response.text
+        except Exception as e:
+            text = str(e)
+        try:
+            counters = []
+            for counter in json.loads(response.text)['counters']:
+                counters.append({'id': counter['id'], 'status': counter['status']})
+        except Exception as e:
+            counters = str(e)
+        return Response({"success": True,
+                         'message': {'counters': counters, 'text': text}},
+                        status=HTTP_200_OK)
+    except Exception as e:
+        return Response({"success": False,
+                         'message': str(e)},
+                        status=HTTP_200_OK)
+
+
+# http://127.0.0.1:8000/api/yandex_metric/
+# {
+#     "token": "AgAAAAA6GOKOAAaK6ylSovuTNkVSnE6XeGbOKks",
+#     "id_count": 66325555
+# }
+@csrf_exempt
+@api_view(["POST"])
+def yandex_metric(request):
+    token = request.data.get('token')
+    if token is None:
+        return Response({"success": False, 'message': "add token"},
+                        status=HTTP_200_OK)
+    try:
+        id_count = int(request.data.get('id_count'))
+    except Exception as e:
+        return Response({"success": False, 'message': str(e)},
+                        status=HTTP_200_OK)
+    if token is None:
+        return Response({"success": False, 'message': "add id_count"},
+                        status=HTTP_200_OK)
+
+    header = {'Authorization': 'OAuth ' + token}
+
+    payload = {
+        'metrics': 'ym:s:pageviews, ym:s:users',
+        'ids': id_count,
+        'accuracy': 'full',
+        'pretty': True,
+    }
+
+    r = requests.get('https://api-metrika.yandex.ru/stat/v1/data', params=payload, headers=header)
+    data = str(r.json()['max'])[1:-1].split(",")
+
+    return Response({"success": True,
+                     'message': 'total: ' + str(id_count) + str(data)},
+                    status=HTTP_200_OK)
