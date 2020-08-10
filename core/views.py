@@ -331,5 +331,5 @@ def yandex_metric(request):
     data = str(r.json()['max'])[1:-1].split(",")
 
     return Response({"success": True,
-                     'message': 'total: ' + str(id_count) + str(data)},
+                     'message': {'total': str(id_count) + str(data), "text": r.text}},
                     status=HTTP_200_OK)
