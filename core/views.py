@@ -153,18 +153,59 @@ def statistic(request):
         "params": {
             "SelectionCriteria": {
                 "DateFrom": "2020-08-01",
-                "DateTo": "2020-08-05"
+                "DateTo": "2020-08-11"
             },
             "FieldNames": [
-                "Date",
+                "AdFormat",
+                "AdGroupId",
+                "AdId",
+                "AdNetworkType",
+                "Age",
+                "AvgClickPosition",
+                "AvgCpc",
+                "AvgImpressionPosition",
+                "AvgPageviews",
+                "AvgTrafficVolume",
+                "BounceRate",
+                "Bounces",
+                "CampaignId",
                 "CampaignName",
-                "LocationOfPresenceName",
-                "Impressions",
+                "CarrierType",
                 "Clicks",
-                "Cost"
+                "ConversionRate",
+                "Conversions",
+                "Cost",
+                "CostPerConversion",
+                "Criteria",
+                "CriteriaId",
+                "CriteriaType",
+                "Ctr",
+                "Date",
+                "Device",
+                "ExternalNetworkName",
+                "Gender",
+                "GoalsRoi",
+                "Impressions",
+                "LocationOfPresenceId",
+                "LocationOfPresenceName",
+                "MatchType",
+                "MobilePlatform",
+                "Placement",
+                "Profit",
+                "Revenue",
+                "RlAdjustmentId",
+                "Sessions",
+                "Slot",
+                "TargetingLocationId",
+                "TargetingLocationName",
+                "WeightedCtr",
+                "WeightedImpressions",
+                #https://yandex.ru/dev/direct/doc/reports/fields-list-docpage/
+
+
             ],
             "ReportName": "name",
-            "ReportType": "CAMPAIGN_PERFORMANCE_REPORT",
+            "ReportType": "CUSTOM_REPORT",
             "DateRangeType": "CUSTOM_DATE",
             "Format": "TSV",
             "IncludeVAT": "NO",
@@ -321,15 +362,16 @@ def yandex_metric(request):
     header = {'Authorization': 'OAuth ' + token}
 
     payload = {
-        'metrics': 'ym:s:pageviews, ym:s:users',
+        # 'metrics': 'ym:s:visits, ym:s:pageviews, ym:s:users',
         'ids': id_count,
-        'accuracy': 'full',
-        'pretty': True,
+        # 'accuracy': 'full',
+        # 'pretty': True,
+        "preset": "geo_country"
     }
 
     r = requests.get('https://api-metrika.yandex.ru/stat/v1/data', params=payload, headers=header)
     data = str(r.json()['max'])[1:-1].split(",")
 
     return Response({"success": True,
-                     'message': {'total': str(id_count) + str(data), "text": r.text}},
+                     'message': {'total': str(data), "text": r.text}},
                     status=HTTP_200_OK)
